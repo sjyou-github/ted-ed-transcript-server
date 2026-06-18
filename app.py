@@ -134,10 +134,19 @@ def transcript():
         }), 404
 
     except Exception as e:
+        detail = str(e)
+
+        if "Too Many Requests" in detail or "google.com/sorry" in detail or "429" in detail:
+            return jsonify({
+                "ok": False,
+                "error": "youtube_blocked_render_ip",
+                "detail": "YouTube blocked the Render server IP with 429 Too Many Requests. This is not a code error. Use a local phone/PC Python method or another transcript source."
+            }), 429
+
         return jsonify({
             "ok": False,
             "error": "server_error",
-            "detail": str(e)
+            "detail": detail
         }), 500
 
 

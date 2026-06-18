@@ -50,6 +50,7 @@ def transcript_to_text(items) -> str:
     return " ".join(lines)
 
 
+
 def get_transcript(video_id: str) -> tuple[str, str]:
     """
     Return: transcript_text, language_code
@@ -59,13 +60,12 @@ def get_transcript(video_id: str) -> tuple[str, str]:
     2. Generated English transcript
     3. Any available transcript translated to English
     """
-    ytt = YouTubeTranscriptApi()
-    transcript_list = ytt.list(video_id)
+    transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
 
     # 1. Try manual English transcripts
     for langs in (["en"], ["en-US"], ["en-GB"]):
         try:
-            transcript = transcript_list.find_transcript(langs)
+            transcript = transcript_list.find_manually_created_transcript(langs)
             items = transcript.fetch()
             return transcript_to_text(items), transcript.language_code
         except Exception:
@@ -80,7 +80,16 @@ def get_transcript(video_id: str) -> tuple[str, str]:
         except Exception:
             pass
 
-    # 3. Try translating the first available transcript to English
+    # 3. Try any English transcript
+    for langs in (["en"], ["en-US"], ["en-GB"]):
+        try:
+            transcript = transcript_list.find_transcript(langs)
+            items = transcript.fetch()
+            return transcript_to_text(items), transcript.language_code
+        except Exception:
+            pass
+
+    # 4. Try translating the first available transcript to English
     for transcript in transcript_list:
         try:
             if transcript.is_translatable:
@@ -90,7 +99,7 @@ def get_transcript(video_id: str) -> tuple[str, str]:
         except Exception:
             continue
 
-    raise NoTranscriptFound(video_id, ["en"], transcript_list)
+    raise Exception("No usable transcript found for this video.")
 
 
 @app.route("/", methods=["GET"])
